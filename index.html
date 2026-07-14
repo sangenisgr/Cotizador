@@ -177,7 +177,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:10
       <div class="field"><label>Aumento de altura</label>
         <select id="c-aum"><option value="0.4">+40 cm</option><option value="0.6">+60 cm</option></select>
       </div>
-      <div class="field"><label>Ancho de la tela (m)</label><input type="number" id="c-ancho-tela" placeholder="3" step="0.1" min="0" value="3"></div>
+      <div class="field"><label>Ancho del rollo de tela (m)</label><input type="number" id="c-ancho-tela" placeholder="3" step="0.01" min="0" value="3"></div>
       <div class="field"><label>Costo tela / metro ($)</label><input type="number" id="c-ctela" placeholder="680" step="1" min="0"></div>
       <div class="field"><label>Costo confección / metro ($)</label><input type="number" id="c-cconf" placeholder="180" step="1" min="0"></div>
       <div class="field"><label>Costo cortinero / metro ($)</label><input type="number" id="c-ccort" placeholder="840" step="1" min="0"></div>
@@ -279,7 +279,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:10
           <div class="field"><label>Costo cortinero / metro ($)</label><input type="number" id="cat-c-ccort" placeholder="840" step="1" min="0"></div>
           <div class="field"><label>Bastón ($)</label><input type="number" id="cat-c-bast" placeholder="300" step="1" min="0"></div>
           <div class="field"><label>Instalación ($)</label><input type="number" id="cat-c-inst" placeholder="800" step="1" min="0"></div>
-          <div class="field"><label>Ancho de tela (m)</label><input type="number" id="cat-c-ancho-tela" placeholder="3" step="0.1" min="0" value="3"></div>
+          <div class="field"><label>Ancho del rollo de tela (m)</label><input type="number" id="cat-c-ancho-tela" placeholder="3" step="0.01" min="0" value="3"></div>
         </div>
       </div>
 
@@ -423,20 +423,38 @@ function calcPersiana() {
     detail:`${ancho}m × ${alto}m = ${m2} m²  ·  ${s('p-tipo')||'Persiana'} ${s('p-color')}  ·  ${s('p-prov')}`};
 }
 function calcCortina() {
-  const ancho=v('c-ancho'),alto=v('c-alto'),aum=v('c-aum'),anchoTela=v('c-ancho-tela')||3;
-  const altoCorte=r2(alto+aum),anchoCortina=r2(ancho*2.5);
-  const numLienzos=Math.ceil(anchoCortina/anchoTela);
+  const ancho=v('c-ancho'),alto=v('c-alto'),aum=v('c-aum'),anchoRollo=v('c-ancho-tela')||3;
+  const altoCorte=r2(alto+aum);
+  const anchoCortina=r2(ancho*2.5); // metros de tela necesarios con fruncido
   const ctela=v('c-ctela'),cconf=v('c-cconf'),ccort=v('c-ccort');
   const bast=v('c-bast'),inst=v('c-inst');
-  // Lógica correcta: tela y confección usan anchoCortina, cortinero usa ancho ventana
-  const costoTela=r2(anchoCortina*ctela);
+
+  // Lógica metraje vs lienzos:
+  // Si el alto corte cabe en el rollo → compra por METRAJE
+  // Si el alto corte NO cabe → compra por LIENZOS (tela rotada)
+  let metrosTela, numLienzos, modo;
+  if (altoCorte <= anchoRollo) {
+    // METRAJE: solo se compran los metros del ancho de cortina
+    modo = 'metraje';
+    numLienzos = 0;
+    metrosTela = anchoCortina;
+  } else {
+    // LIENZOS: tela rotada, se calculan lienzos × alto corte
+    modo = 'lienzos';
+    numLienzos = Math.ceil(anchoCortina / anchoRollo);
+    metrosTela = r2(numLienzos * altoCorte);
+  }
+  metrosTela = r2(metrosTela);
+
+  const costoTela=r2(metrosTela*ctela);
   const costoConf=r2(anchoCortina*cconf);
   const costoCort=r2(ancho*ccort);
   const sub=r2(costoTela+costoConf+costoCort+bast+inst);
+  const modoLabel = modo==='metraje' ? `${metrosTela} m (metraje)` : `${numLienzos} lienzos · ${metrosTela} m`;
   return {subtotal:sub,data:{confeccion:s('c-conf'),tela:s('c-tela'),color:s('c-color'),
-    proveedor:s('c-prov'),control:s('c-control'),ancho,alto,aum,anchoTela,altoCorte,anchoCortina,
-    numLienzos,ctela,cconf,ccort,bast,inst,costoTela,costoConf,costoCort},
-    detail:`${ancho}m × ${alto}m  ·  ${s('c-conf')||'Cortina'} ${s('c-tela')} ${s('c-color')}  ·  ${numLienzos} lienzos  ·  ${s('c-prov')}`};
+    proveedor:s('c-prov'),control:s('c-control'),ancho,alto,aum,anchoRollo,altoCorte,anchoCortina,
+    numLienzos,metrosTela,modo,ctela,cconf,ccort,bast,inst,costoTela,costoConf,costoCort},
+    detail:`${ancho}m × ${alto}m  ·  ${s('c-conf')||'Cortina'} ${s('c-tela')} ${s('c-color')}  ·  ${modoLabel}  ·  ${s('c-prov')}`};
 }
 function calcPiso() {
   const ancho=v('pi-ancho'),largo=v('pi-largo'),cajam2=v('pi-caja');
@@ -625,11 +643,15 @@ function exportarExcel() {
       wd2.push(['Ancho:',`${d.ancho} m`,'Alto:',`${d.alto} m`]);wd2.push(['M²:',`${it.m2} m²`,'Precio/m²:',`$${d.precio}`]);
       wd2.push(['Persiana:',`$${d.totalPersiana}`,'Instalación:',`$${d.inst}`]);wd2.push(['SUBTOTAL:',`$${it.subtotal}`]);
     } else if(it.type==='cortina'){const d=it.data;
-      wd2.push(['Confección:',d.confeccion,'Tela:',`${d.tela} ${d.color}`]);wd2.push(['Proveedor:',d.proveedor,'Control:',d.control]);
+      wd2.push(['Confección:',d.confeccion,'Tela:',`${d.tela} ${d.color}`]);
+      wd2.push(['Proveedor:',d.proveedor,'Control:',d.control]);
       wd2.push(['Ancho ventana:',`${d.ancho} m`,'Alto ventana:',`${d.alto} m`]);
-      wd2.push(['Aumento:',`${d.aum} m`,'Alto corte:',`${d.altoCorte} m`]);
-      wd2.push(['Ancho cortina (×2.5):',`${d.anchoCortina} m`,'Lienzos:',d.numLienzos]);
-      wd2.push(['Costo tela:',`$${d.costoTela}`,'Costo confección:',`$${d.costoConf}`]);
+      wd2.push(['Aumento costura:',`${d.aum} m`,'Alto corte:',`${d.altoCorte} m`]);
+      wd2.push(['Ancho cortina (×2.5):',`${d.anchoCortina} m`,'Ancho rollo:',`${d.anchoRollo} m`]);
+      wd2.push(['Modo de compra:',d.modo==='metraje'?'Por metraje (tela normal)':'Por lienzos (tela rotada)']);
+      if(d.modo==='lienzos') wd2.push(['Lienzos:',d.numLienzos,'Metros tela:',`${d.metrosTela} m`]);
+      else wd2.push(['Metros tela:',`${d.metrosTela} m`]);
+      wd2.push(['Costo tela:',`$${d.costoTela}`,'Confección:',`$${d.costoConf}`]);
       wd2.push(['Cortinero:',`$${d.costoCort}`,'Bastón:',`$${d.bast}`]);
       wd2.push(['Instalación:',`$${d.inst}`]);wd2.push(['SUBTOTAL:',`$${it.subtotal}`]);
     } else {const d=it.data;
