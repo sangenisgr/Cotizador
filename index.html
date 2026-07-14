@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CotizadorPC — Persianas & Cortinas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh}
+.topbar{background:#1e3a5f;color:#fff;padding:0;display:flex;align-items:stretch}
+.tab-nav{display:flex;align-items:stretch}
+.tab-nav-btn{padding:14px 24px;background:none;border:none;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif;border-bottom:3px solid transparent;transition:all .15s}
+.tab-nav-btn.active{color:#fff;border-bottom-color:#fff}
+.tab-nav-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.app-title{padding:14px 24px 14px 20px;font-size:17px;font-weight:700;color:#fff;border-right:1px solid rgba(255,255,255,.15);margin-right:8px}
+.container{max-width:900px;margin:0 auto;padding:24px 16px}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:20px 24px;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:#6b7280;font-weight:600}
+.field input,.field select,.field textarea{border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:14px;color:#1a1a1a;background:#fff;outline:none;transition:border .15s;font-family:Arial,sans-serif}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#2e6da4;box-shadow:0 0 0 3px rgba(46,109,164,.1)}
+.type-tabs{display:flex;gap:8px;margin-bottom:16px}
+.type-tab{flex:1;padding:9px 6px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:#6b7280;text-align:center;transition:all .15s;font-family:Arial,sans-serif;font-weight:600}
+.type-tab.active{border-color:#2e6da4;background:#eef4fb;color:#1e3a5f}
+.field-group{display:none}.field-group.visible{display:grid;gap:12px}
+.items-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;min-height:52px}
+.empty-msg{text-align:center;padding:20px;color:#9ca3af;font-size:14px;background:#f9fafb;border-radius:8px;border:1px dashed #e5e7eb}
+.item-row{display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px}
+.item-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap}
+.badge-persiana{background:#dbeafe;color:#1e40af}
+.badge-cortina{background:#d1fae5;color:#065f46}
+.badge-piso{background:#fef3c7;color:#92400e}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:14px;font-weight:700;color:#1a1a1a}
+.item-detail{font-size:12px;color:#6b7280;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-price{font-size:15px;font-weight:700;color:#1e3a5f;white-space:nowrap}
+.item-del{background:none;border:none;color:#d1d5db;cursor:pointer;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px}
+.item-del:hover{color:#ef4444;background:#fee2e2}
+.totals-box{border-top:1px solid #e5e7eb;padding-top:14px;margin-top:4px}
+.t-row{display:flex;justify-content:space-between;font-size:14px;color:#6b7280;padding:4px 0}
+.t-row.main{font-size:18px;font-weight:700;color:#1e3a5f;border-top:2px solid #1e3a5f;margin-top:8px;padding-top:12px}
+.btn-add{width:100%;padding:10px;background:#fff;border:1.5px dashed #2e6da4;color:#2e6da4;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:14px;font-family:Arial,sans-serif;transition:all .15s}
+.btn-add:hover{background:#eef4fb}
+.btn-primary{width:100%;padding:13px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;margin-top:6px;transition:background .15s}
+.btn-primary:hover{background:#2e6da4}
+.btn-secondary{padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif;color:#374151;transition:all .15s}
+.btn-secondary:hover{background:#f3f4f6;border-color:#9ca3af}
+.btn-danger{padding:8px 14px;background:#fff;border:1px solid #fca5a5;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif;color:#dc2626;transition:all .15s}
+.btn-danger:hover{background:#fee2e2}
+.folio-badge{background:#eef4fb;color:#1e3a5f;font-size:13px;font-weight:700;padding:6px 14px;border-radius:6px;border:1px solid #bcd5ed;display:inline-block}
+.hint{font-size:12px;color:#9ca3af;margin-top:8px;text-align:center}
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 8px 8px;z-index:100;max-height:200px;overflow-y:auto;display:none}
+.autocomplete-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:0.5px solid #f3f4f6;color:#1a1a1a}
+.autocomplete-item:hover{background:#eef4fb;color:#1e3a5f}
+.autocomplete-item small{display:block;color:#9ca3af;font-size:11px;margin-top:1px}
+/* Catálogo */
+.cat-table{width:100%;border-collapse:collapse;font-size:13px}
+.cat-table th{background:#1e3a5f;color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:12px}
+.cat-table td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
+.cat-table tr:hover td{background:#f8fafc}
+.cat-type-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px}
+.cat-actions{display:flex;gap:6px}
+.btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:600;font-family:Arial,sans-serif}
+.btn-icon-edit{color:#2e6da4}.btn-icon-edit:hover{background:#eef4fb}
+.btn-icon-del{color:#dc2626}.btn-icon-del:hover{background:#fee2e2}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#1e3a5f}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.tag-cat{margin-right:4px}
+.section-add-title{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:12px}
+.cat-empty{text-align:center;padding:32px;color:#9ca3af;font-size:14px}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}.type-tabs{flex-direction:column}.tab-nav-btn{padding:12px 14px;font-size:13px}.app-title{font-size:15px;padding:12px 16px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="app-title">🪟 CotizadorPC</div>
+  <div class="tab-nav">
+    <button class="tab-nav-btn active" onclick="showTab('cotizar')">Cotizar</button>
+    <button class="tab-nav-btn" onclick="showTab('catalogo')">Catálogo</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: COTIZAR -->
+<div class="tab-content active" id="tab-cotizar">
+<div class="container">
+
+  <div class="card">
+    <div class="card-title">Datos del cliente</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:13px;color:#6b7280">Folio:</span>
+      <span class="folio-badge" id="folio-display">COT-2026-001</span>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Nombre del cliente</label><input type="text" id="cliente" placeholder="Ej. Karla Martínez"></div>
+      <div class="field"><label>Teléfono / contacto</label><input type="text" id="telefono" placeholder="Ej. 33 1234 5678"></div>
+      <div class="field"><label>Proyecto / descripción</label><input type="text" id="proyecto" placeholder="Ej. Casa habitación Zapopan"></div>
+      <div class="field"><label>Vigencia</label>
+        <select id="vigencia"><option>15 días naturales</option><option selected>30 días naturales</option><option>45 días naturales</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Productos cotizados</div>
+    <div class="items-list" id="items-list">
+      <div class="empty-msg">Aún no hay productos. Agrega uno usando el formulario de abajo.</div>
+    </div>
+    <div class="totals-box">
+      <div class="t-row"><span>Subtotal</span><span id="t-sub">$0.00</span></div>
+      <div class="t-row"><span>IVA (16%)</span><span id="t-iva">$0.00</span></div>
+      <div class="t-row main"><span>Total cotización</span><span id="t-total">$0.00</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-add-title">+ Agregar producto</div>
+    <div class="type-tabs">
+      <button class="type-tab active" onclick="setType('persiana')">🪟 Persiana</button>
+      <button class="type-tab" onclick="setType('cortina')">🎭 Cortina</button>
+      <button class="type-tab" onclick="setType('piso')">🟫 Piso</button>
+    </div>
+
+    <div class="field" style="margin-bottom:14px">
+      <label>Área / ubicación</label>
+      <input type="text" id="f-area" placeholder="Ej. Sala, Recámara principal, Consultorio">
+    </div>
+
+    <!-- PERSIANA -->
+    <div class="field-group visible grid3" id="fg-persiana">
+      <div class="field" style="grid-column:1/-1">
+        <label>Buscar en catálogo (opcional)</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="p-buscar" placeholder="Escribe el nombre del producto..." oninput="buscarCatalogo('persiana','p-buscar')" autocomplete="off">
+          <div class="autocomplete-list" id="ac-persiana"></div>
+        </div>
+      </div>
+      <div class="field"><label>Tipo de persiana</label><input type="text" id="p-tipo" placeholder="Ej. Sheer Elegance"></div>
+      <div class="field"><label>Modelo / Color</label><input type="text" id="p-color" placeholder="Ej. Ivory"></div>
+      <div class="field"><label>Proveedor</label><input type="text" id="p-prov" placeholder="Ej. Farz"></div>
+      <div class="field"><label>Lado de control</label>
+        <select id="p-control"><option>Control Izquierdo</option><option>Control Derecho</option><option>Sin control / motorizado</option></select>
+      </div>
+      <div class="field"><label>Ancho ventana (m)</label><input type="number" id="p-ancho" placeholder="2.85" step="0.01" min="0"></div>
+      <div class="field"><label>Alto ventana (m)</label><input type="number" id="p-alto" placeholder="1.60" step="0.01" min="0"></div>
+      <div class="field"><label>Precio público / m²</label><input type="number" id="p-precio" placeholder="1240" step="1" min="0"></div>
+      <div class="field"><label>Instalación ($)</label><input type="number" id="p-inst" placeholder="400" step="1" min="0"></div>
+    </div>
+
+    <!-- CORTINA -->
+    <div class="field-group grid3" id="fg-cortina">
+      <div class="field" style="grid-column:1/-1">
+        <label>Buscar en catálogo (opcional)</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="c-buscar" placeholder="Escribe el nombre del producto..." oninput="buscarCatalogo('cortina','c-buscar')" autocomplete="off">
+          <div class="autocomplete-list" id="ac-cortina"></div>
+        </div>
+      </div>
+      <div class="field"><label>Tipo de confección</label><input type="text" id="c-conf" placeholder="Ej. Onda Perfecta"></div>
+      <div class="field"><label>Tela</label><input type="text" id="c-tela" placeholder="Ej. Tamara"></div>
+      <div class="field"><label>Color de tela</label><input type="text" id="c-color" placeholder="Ej. Sand"></div>
+      <div class="field"><label>Proveedor</label><input type="text" id="c-prov" placeholder="Ej. American"></div>
+      <div class="field"><label>Lado de control</label>
+        <select id="c-control"><option>Control Izquierdo</option><option>Control Derecho</option></select>
+      </div>
+      <div class="field"><label>Ancho ventana (m)</label><input type="number" id="c-ancho" placeholder="3.40" step="0.01" min="0"></div>
+      <div class="field"><label>Alto ventana (m)</label><input type="number" id="c-alto" placeholder="2.48" step="0.01" min="0"></div>
+      <div class="field"><label>Aumento de altura</label>
+        <select id="c-aum"><option value="0.4">+40 cm</option><option value="0.6">+60 cm</option></select>
+      </div>
+      <div class="field"><label>Ancho de la tela (m)</label><input type="number" id="c-ancho-tela" placeholder="3" step="0.1" min="0" value="3"></div>
+      <div class="field"><label>Costo tela / metro ($)</label><input type="number" id="c-ctela" placeholder="680" step="1" min="0"></div>
+      <div class="field"><label>Costo confección / metro ($)</label><input type="number" id="c-cconf" placeholder="180" step="1" min="0"></div>
+      <div class="field"><label>Costo cortinero / metro ($)</label><input type="number" id="c-ccort" placeholder="840" step="1" min="0"></div>
+      <div class="field"><label>Bastón ($)</label><input type="number" id="c-bast" placeholder="300" step="1" min="0"></div>
+      <div class="field"><label>Instalación ($)</label><input type="number" id="c-inst" placeholder="800" step="1" min="0"></div>
+    </div>
+
+    <!-- PISO -->
+    <div class="field-group grid3" id="fg-piso">
+      <div class="field" style="grid-column:1/-1">
+        <label>Buscar en catálogo (opcional)</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="pi-buscar" placeholder="Escribe el nombre del producto..." oninput="buscarCatalogo('piso','pi-buscar')" autocomplete="off">
+          <div class="autocomplete-list" id="ac-piso"></div>
+        </div>
+      </div>
+      <div class="field"><label>Material</label><input type="text" id="pi-mat" placeholder="Ej. Max"></div>
+      <div class="field"><label>Color</label><input type="text" id="pi-color" placeholder="Ej. Ashlar"></div>
+      <div class="field"><label>Proveedor</label><input type="text" id="pi-prov" placeholder="Ej. TeknoStep"></div>
+      <div class="field"><label>Ancho área (m)</label><input type="number" id="pi-ancho" placeholder="2.60" step="0.01" min="0"></div>
+      <div class="field"><label>Largo área (m)</label><input type="number" id="pi-largo" placeholder="1.31" step="0.01" min="0"></div>
+      <div class="field"><label>m² por caja</label><input type="number" id="pi-caja" placeholder="2.22" step="0.01" min="0"></div>
+      <div class="field"><label>Precio por caja ($)</label><input type="number" id="pi-precio" placeholder="574" step="1" min="0"></div>
+      <div class="field"><label>Instalación / m² ($)</label><input type="number" id="pi-inst" placeholder="110" step="1" min="0"></div>
+    </div>
+
+    <button class="btn-add" onclick="addItem()">＋ Agregar a la cotización</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Notas para el cliente (opcional)</div>
+    <div class="field"><textarea id="notas" rows="3" placeholder="Ej. Tiempo de entrega: 15-20 días hábiles. Anticipo del 50% para iniciar trabajos."></textarea></div>
+  </div>
+
+  <button class="btn-primary" onclick="exportarExcel()">⬇ Descargar cotización en Excel</button>
+  <p class="hint">El archivo se descarga directo a tu computadora. No necesitas internet ni crear cuenta.</p>
+  <div style="height:32px"></div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: CATÁLOGO -->
+<div class="tab-content" id="tab-catalogo">
+<div class="container">
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Catálogo de productos</div>
+        <div style="font-size:12px;color:#9ca3af">Agrega tus productos con precios para autocompletar rápido al cotizar</div>
+      </div>
+      <button class="btn-secondary" onclick="abrirModalCat()">+ Nuevo producto</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="type-tab active" style="flex:none;padding:6px 14px" onclick="filtrarCat('todos',this)">Todos</button>
+      <button class="type-tab" style="flex:none;padding:6px 14px" onclick="filtrarCat('persiana',this)">Persianas</button>
+      <button class="type-tab" style="flex:none;padding:6px 14px" onclick="filtrarCat('cortina',this)">Cortinas</button>
+      <button class="type-tab" style="flex:none;padding:6px 14px" onclick="filtrarCat('piso',this)">Pisos</button>
+    </div>
+
+    <div id="cat-container"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ MODAL CATÁLOGO -->
+<div class="modal-overlay" id="modal-cat" onclick="cerrarModalSiOverlay(event)">
+  <div class="modal">
+    <h2 id="modal-title">Nuevo producto en catálogo</h2>
+
+    <div class="type-tabs" style="margin-bottom:16px">
+      <button class="type-tab active" onclick="setCatType('persiana')">🪟 Persiana</button>
+      <button class="type-tab" onclick="setCatType('cortina')">🎭 Cortina</button>
+      <button class="type-tab" onclick="setCatType('piso')">🟫 Piso</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label>Nombre del producto *</label><input type="text" id="cat-nombre" placeholder="Ej. Sheer Elegance Wood Look Ivory"></div>
+      <div class="field"><label>Proveedor *</label><input type="text" id="cat-prov" placeholder="Ej. Farz, Hunter Douglas, American"></div>
+      <div class="field"><label>Notas / descripción</label><input type="text" id="cat-notas" placeholder="Ej. Disponible en varios colores"></div>
+
+      <!-- Campos persiana -->
+      <div id="cat-fg-persiana">
+        <div class="grid2" style="gap:12px">
+          <div class="field"><label>Precio público / m² ($)</label><input type="number" id="cat-p-precio" placeholder="1240" step="1" min="0"></div>
+          <div class="field"><label>Instalación fija ($)</label><input type="number" id="cat-p-inst" placeholder="400" step="1" min="0"></div>
+        </div>
+      </div>
+
+      <!-- Campos cortina -->
+      <div id="cat-fg-cortina" style="display:none">
+        <div class="grid2" style="gap:12px">
+          <div class="field"><label>Tipo de confección</label><input type="text" id="cat-c-conf" placeholder="Ej. Onda Perfecta"></div>
+          <div class="field"><label>Tela</label><input type="text" id="cat-c-tela" placeholder="Ej. Tamara"></div>
+          <div class="field"><label>Costo tela / metro ($)</label><input type="number" id="cat-c-ctela" placeholder="680" step="1" min="0"></div>
+          <div class="field"><label>Costo confección / metro ($)</label><input type="number" id="cat-c-cconf" placeholder="180" step="1" min="0"></div>
+          <div class="field"><label>Costo cortinero / metro ($)</label><input type="number" id="cat-c-ccort" placeholder="840" step="1" min="0"></div>
+          <div class="field"><label>Bastón ($)</label><input type="number" id="cat-c-bast" placeholder="300" step="1" min="0"></div>
+          <div class="field"><label>Instalación ($)</label><input type="number" id="cat-c-inst" placeholder="800" step="1" min="0"></div>
+          <div class="field"><label>Ancho de tela (m)</label><input type="number" id="cat-c-ancho-tela" placeholder="3" step="0.1" min="0" value="3"></div>
+        </div>
+      </div>
+
+      <!-- Campos piso -->
+      <div id="cat-fg-piso" style="display:none">
+        <div class="grid2" style="gap:12px">
+          <div class="field"><label>Material</label><input type="text" id="cat-pi-mat" placeholder="Ej. Max, Laminado"></div>
+          <div class="field"><label>m² por caja</label><input type="number" id="cat-pi-caja" placeholder="2.22" step="0.01" min="0"></div>
+          <div class="field"><label>Precio por caja ($)</label><input type="number" id="cat-pi-precio" placeholder="574" step="1" min="0"></div>
+          <div class="field"><label>Instalación / m² ($)</label><input type="number" id="cat-pi-inst" placeholder="110" step="1" min="0"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" style="width:auto;padding:9px 20px;margin-top:0" onclick="guardarProductoCat()">Guardar producto</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Estado global ────────────────────────────────────────────────────────────
+let currentType = 'persiana';
+let catType = 'persiana';
+let items = [];
+let catalogo = [];
+let editandoIdx = -1;
+let catFiltro = 'todos';
+let folioNum = parseInt(localStorage.getItem('folioNum') || '1');
+
+// ── Catálogo de ejemplo (se guarda en localStorage) ──────────────────────────
+const CAT_DEFAULT = [
+  {type:'persiana', nombre:'Sheer Elegance Wood Look', proveedor:'Farz', notas:'Disponible en Ivory, Beige, Sand', p_precio:1240, p_inst:400},
+  {type:'persiana', nombre:'Roller Blackout Premium', proveedor:'Hunter Douglas', notas:'Control motorizado disponible', p_precio:1480, p_inst:450},
+  {type:'persiana', nombre:'Veneciana Aluminio 25mm', proveedor:'Levolor', notas:'', p_precio:720, p_inst:350},
+  {type:'cortina', nombre:'Onda Perfecta Tamara Sand', proveedor:'American', notas:'Tela importada',
+    c_conf:'Onda Perfecta', c_tela:'Tamara', c_ctela:680, c_cconf:180, c_ccort:840, c_bast:300, c_inst:800, c_ancho_tela:3},
+  {type:'cortina', nombre:'Cortina Sheer Lino Natural', proveedor:'Bali Blinds', notas:'',
+    c_conf:'Tabla', c_tela:'Lino Natural', c_ctela:480, c_cconf:160, c_ccort:790, c_bast:280, c_inst:700, c_ancho_tela:3},
+  {type:'piso', nombre:'Max Ashlar Vinílico', proveedor:'TeknoStep', notas:'Resistente a humedad',
+    pi_mat:'Max Vinílico', pi_caja:2.225, pi_precio:574, pi_inst:110},
+];
+
+function cargarCatalogo() {
+  const raw = localStorage.getItem('catalogo_pc');
+  catalogo = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(CAT_DEFAULT));
+}
+function guardarCatalogo() {
+  localStorage.setItem('catalogo_pc', JSON.stringify(catalogo));
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+cargarCatalogo();
+const hoy = new Date();
+actualizarFolio();
+renderCatalogo();
+
+function actualizarFolio() {
+  const año = hoy.getFullYear();
+  document.getElementById('folio-display').textContent = `COT-${año}-${String(folioNum).padStart(3,'0')}`;
+}
+
+// ── Tabs principales ─────────────────────────────────────────────────────────
+function showTab(t) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Tipo de producto (cotizador) ─────────────────────────────────────────────
+function setType(t) {
+  currentType = t;
+  document.querySelectorAll('.type-tabs')[0].querySelectorAll('.type-tab').forEach((el,i) => {
+    el.classList.toggle('active', ['persiana','cortina','piso'][i] === t);
+  });
+  ['persiana','cortina','piso'].forEach(tp => {
+    document.getElementById('fg-'+tp).classList.toggle('visible', tp === t);
+  });
+}
+
+// ── Autocomplete desde catálogo ───────────────────────────────────────────────
+function buscarCatalogo(tipo, inputId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  const acId = 'ac-' + tipo;
+  const ac = document.getElementById(acId);
+  if (!q) { ac.style.display='none'; return; }
+  const matches = catalogo.filter(p => p.type===tipo && p.nombre.toLowerCase().includes(q));
+  if (!matches.length) { ac.style.display='none'; return; }
+  ac.innerHTML = matches.map((p,i) => `
+    <div class="autocomplete-item" onclick="aplicarCatalogo('${tipo}',${catalogo.indexOf(p)})">
+      ${p.nombre}
+      <small>${p.proveedor}${p.notas ? ' · '+p.notas : ''}</small>
+    </div>`).join('');
+  ac.style.display='block';
+}
+
+function aplicarCatalogo(tipo, idx) {
+  const p = catalogo[idx];
+  if (tipo==='persiana') {
+    sv('p-tipo', p.nombre); sv('p-prov', p.proveedor);
+    svn('p-precio', p.p_precio); svn('p-inst', p.p_inst);
+    document.getElementById('p-buscar').value = p.nombre;
+    document.getElementById('ac-persiana').style.display='none';
+  } else if (tipo==='cortina') {
+    sv('c-conf', p.c_conf||''); sv('c-tela', p.c_tela||''); sv('c-prov', p.proveedor);
+    svn('c-ctela', p.c_ctela); svn('c-cconf', p.c_cconf); svn('c-ccort', p.c_ccort);
+    svn('c-bast', p.c_bast); svn('c-inst', p.c_inst); svn('c-ancho-tela', p.c_ancho_tela||3);
+    document.getElementById('c-buscar').value = p.nombre;
+    document.getElementById('ac-cortina').style.display='none';
+  } else {
+    sv('pi-mat', p.pi_mat||p.nombre); sv('pi-prov', p.proveedor);
+    svn('pi-caja', p.pi_caja); svn('pi-precio', p.pi_precio); svn('pi-inst', p.pi_inst);
+    document.getElementById('pi-buscar').value = p.nombre;
+    document.getElementById('ac-piso').style.display='none';
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) {
+    document.querySelectorAll('.autocomplete-list').forEach(el => el.style.display='none');
+  }
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function g(id){ return document.getElementById(id) }
+function v(id){ return parseFloat(g(id).value)||0 }
+function s(id){ return g(id)?g(id).value.trim():'' }
+function sv(id,val){ if(g(id)) g(id).value=val||'' }
+function svn(id,val){ if(g(id)) g(id).value=val||'' }
+function fmt(n){ return '$'+parseFloat(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function r2(n){ return Math.round(n*100)/100 }
+
+// ── Cálculos ──────────────────────────────────────────────────────────────────
+function calcPersiana() {
+  const ancho=v('p-ancho'),alto=v('p-alto'),precio=v('p-precio'),inst=v('p-inst');
+  const m2=r2(ancho*alto), totalP=r2(m2*precio), sub=r2(totalP+inst);
+  return {subtotal:sub,m2,data:{tipo:s('p-tipo'),color:s('p-color'),proveedor:s('p-prov'),
+    control:s('p-control'),ancho,alto,precio,inst,totalPersiana:totalP},
+    detail:`${ancho}m × ${alto}m = ${m2} m²  ·  ${s('p-tipo')||'Persiana'} ${s('p-color')}  ·  ${s('p-prov')}`};
+}
+function calcCortina() {
+  const ancho=v('c-ancho'),alto=v('c-alto'),aum=v('c-aum'),anchoTela=v('c-ancho-tela')||3;
+  const altoCorte=r2(alto+aum),anchoCortina=r2(ancho*2.5);
+  const numLienzos=Math.ceil(anchoCortina/anchoTela);
+  const ctela=v('c-ctela'),cconf=v('c-cconf'),ccort=v('c-ccort');
+  const bast=v('c-bast'),inst=v('c-inst');
+  // Lógica correcta: tela y confección usan anchoCortina, cortinero usa ancho ventana
+  const costoTela=r2(anchoCortina*ctela);
+  const costoConf=r2(anchoCortina*cconf);
+  const costoCort=r2(ancho*ccort);
+  const sub=r2(costoTela+costoConf+costoCort+bast+inst);
+  return {subtotal:sub,data:{confeccion:s('c-conf'),tela:s('c-tela'),color:s('c-color'),
+    proveedor:s('c-prov'),control:s('c-control'),ancho,alto,aum,anchoTela,altoCorte,anchoCortina,
+    numLienzos,ctela,cconf,ccort,bast,inst,costoTela,costoConf,costoCort},
+    detail:`${ancho}m × ${alto}m  ·  ${s('c-conf')||'Cortina'} ${s('c-tela')} ${s('c-color')}  ·  ${numLienzos} lienzos  ·  ${s('c-prov')}`};
+}
+function calcPiso() {
+  const ancho=v('pi-ancho'),largo=v('pi-largo'),cajam2=v('pi-caja');
+  const m2=r2(ancho*largo),m2exc=r2(m2*1.10),cajas=cajam2>0?Math.ceil(m2exc/cajam2):0;
+  const precio=v('pi-precio'),inst=v('pi-inst');
+  const totalMat=r2(cajas*precio),totalInst=r2(m2*inst),subSinIva=r2(totalMat+totalInst);
+  const iva=r2(subSinIva*0.16),sub=r2(subSinIva+iva);
+  return {subtotal:sub,data:{material:s('pi-mat'),color:s('pi-color'),proveedor:s('pi-prov'),
+    ancho,largo,m2,m2exc,cajam2,cajas,precio,inst,totalMat,totalInst,subtotalSinIva:subSinIva,iva},
+    detail:`${ancho}m × ${largo}m = ${m2} m²  ·  ${s('pi-mat')} ${s('pi-color')}  ·  ${cajas} cajas  ·  ${s('pi-prov')} (IVA incl.)`};
+}
+
+// ── Agregar ítem ──────────────────────────────────────────────────────────────
+function addItem() {
+  const area=s('f-area');
+  if(!area){alert('Escribe el área o ubicación del producto.');return;}
+  let calc,label;
+  if(currentType==='persiana'){calc=calcPersiana();label='Persiana';}
+  else if(currentType==='cortina'){calc=calcCortina();label='Cortina';}
+  else{calc=calcPiso();label='Piso';}
+  if(!calc.subtotal||calc.subtotal<=0){alert('Revisa que todos los campos estén completos.');return;}
+  items.push({type:currentType,label,area,...calc});
+  renderItems(); limpiar();
+}
+function removeItem(i){items.splice(i,1);renderItems();}
+
+function renderItems() {
+  const list=g('items-list');
+  if(!items.length){
+    list.innerHTML='<div class="empty-msg">Aún no hay productos. Agrega uno usando el formulario de abajo.</div>';
+  } else {
+    list.innerHTML=items.map((it,i)=>`
+      <div class="item-row">
+        <span class="item-badge badge-${it.type}">${it.label}</span>
+        <div class="item-body">
+          <div class="item-name">${it.area}</div>
+          <div class="item-detail">${it.detail}</div>
+        </div>
+        <div class="item-price">${fmt(it.subtotal)}</div>
+        <button class="item-del" onclick="removeItem(${i})" title="Eliminar">×</button>
+      </div>`).join('');
+  }
+  updateTotals();
+}
+function updateTotals() {
+  const sub=r2(items.reduce((a,it)=>a+it.subtotal,0));
+  const iva=r2(sub*0.16),total=r2(sub+iva);
+  g('t-sub').textContent=fmt(sub);g('t-iva').textContent=fmt(iva);g('t-total').textContent=fmt(total);
+}
+function limpiar() {
+  ['p-tipo','p-color','p-prov','p-ancho','p-alto','p-precio','p-inst','p-buscar',
+   'c-conf','c-tela','c-color','c-prov','c-ancho','c-alto','c-ctela','c-cconf','c-ccort','c-bast','c-inst','c-buscar',
+   'pi-mat','pi-color','pi-prov','pi-ancho','pi-largo','pi-caja','pi-precio','pi-inst','pi-buscar','f-area']
+   .forEach(id=>{const el=g(id);if(el&&el.tagName==='INPUT')el.value='';});
+}
+
+// ── Catálogo ──────────────────────────────────────────────────────────────────
+function filtrarCat(f, btn) {
+  catFiltro=f;
+  document.getElementById('tab-catalogo').querySelectorAll('.type-tab').forEach(el=>el.classList.remove('active'));
+  btn.classList.add('active');
+  renderCatalogo();
+}
+function renderCatalogo() {
+  const lista=catFiltro==='todos'?catalogo:catalogo.filter(p=>p.type===catFiltro);
+  const c=g('cat-container');
+  if(!lista.length){c.innerHTML='<div class="cat-empty">No hay productos en esta categoría todavía.<br>Haz clic en "+ Nuevo producto" para agregar uno.</div>';return;}
+  const labels={persiana:'Persiana',cortina:'Cortina',piso:'Piso'};
+  const colors={persiana:'badge-persiana',cortina:'badge-cortina',piso:'badge-piso'};
+  c.innerHTML=`<table class="cat-table">
+    <thead><tr><th>Tipo</th><th>Producto</th><th>Proveedor</th><th>Precio base</th><th>Notas</th><th></th></tr></thead>
+    <tbody>${lista.map(p=>{
+      const idx=catalogo.indexOf(p);
+      let precio='—';
+      if(p.type==='persiana') precio=`$${p.p_precio}/m²`;
+      else if(p.type==='cortina') precio=`$${p.c_ctela}/ml tela`;
+      else precio=`$${p.pi_precio}/caja`;
+      return `<tr>
+        <td><span class="item-badge ${colors[p.type]}">${labels[p.type]}</span></td>
+        <td style="font-weight:600">${p.nombre}</td>
+        <td>${p.proveedor}</td>
+        <td>${precio}</td>
+        <td style="color:#9ca3af;font-size:12px">${p.notas||''}</td>
+        <td><div class="cat-actions">
+          <button class="btn-icon btn-icon-edit" onclick="editarProducto(${idx})">✏ Editar</button>
+          <button class="btn-icon btn-icon-del" onclick="eliminarProducto(${idx})">✕</button>
+        </div></td>
+      </tr>`;}).join('')}
+    </tbody></table>`;
+}
+
+// ── Modal catálogo ────────────────────────────────────────────────────────────
+let currentCatType = 'persiana';
+function setCatType(t) {
+  currentCatType=t;
+  document.getElementById('modal-cat').querySelectorAll('.type-tab').forEach((el,i)=>{
+    el.classList.toggle('active',['persiana','cortina','piso'][i]===t);
+  });
+  ['persiana','cortina','piso'].forEach(tp=>{
+    g('cat-fg-'+tp).style.display=tp===t?'block':'none';
+  });
+}
+function abrirModalCat(idx=-1) {
+  editandoIdx=idx;
+  g('modal-title').textContent=idx>=0?'Editar producto':'Nuevo producto en catálogo';
+  ['cat-nombre','cat-prov','cat-notas','cat-p-precio','cat-p-inst',
+   'cat-c-conf','cat-c-tela','cat-c-ctela','cat-c-cconf','cat-c-ccort','cat-c-bast','cat-c-inst','cat-c-ancho-tela',
+   'cat-pi-mat','cat-pi-caja','cat-pi-precio','cat-pi-inst'].forEach(id=>{sv(id,'');});
+  if(idx>=0){
+    const p=catalogo[idx];
+    setCatType(p.type); sv('cat-nombre',p.nombre); sv('cat-prov',p.proveedor); sv('cat-notas',p.notas||'');
+    if(p.type==='persiana'){svn('cat-p-precio',p.p_precio);svn('cat-p-inst',p.p_inst);}
+    else if(p.type==='cortina'){sv('cat-c-conf',p.c_conf);sv('cat-c-tela',p.c_tela);
+      svn('cat-c-ctela',p.c_ctela);svn('cat-c-cconf',p.c_cconf);svn('cat-c-ccort',p.c_ccort);
+      svn('cat-c-bast',p.c_bast);svn('cat-c-inst',p.c_inst);svn('cat-c-ancho-tela',p.c_ancho_tela||3);}
+    else{sv('cat-pi-mat',p.pi_mat);svn('cat-pi-caja',p.pi_caja);svn('cat-pi-precio',p.pi_precio);svn('cat-pi-inst',p.pi_inst);}
+  } else { setCatType('persiana'); }
+  g('modal-cat').classList.add('open');
+}
+function editarProducto(idx){abrirModalCat(idx);}
+function cerrarModal(){g('modal-cat').classList.remove('open');}
+function cerrarModalSiOverlay(e){if(e.target===g('modal-cat'))cerrarModal();}
+
+function guardarProductoCat() {
+  const nombre=s('cat-nombre'),prov=s('cat-prov');
+  if(!nombre||!prov){alert('El nombre y el proveedor son obligatorios.');return;}
+  let prod={type:currentCatType,nombre,proveedor:prov,notas:s('cat-notas')};
+  if(currentCatType==='persiana'){prod.p_precio=v('cat-p-precio');prod.p_inst=v('cat-p-inst');}
+  else if(currentCatType==='cortina'){prod.c_conf=s('cat-c-conf');prod.c_tela=s('cat-c-tela');
+    prod.c_ctela=v('cat-c-ctela');prod.c_cconf=v('cat-c-cconf');prod.c_ccort=v('cat-c-ccort');
+    prod.c_bast=v('cat-c-bast');prod.c_inst=v('cat-c-inst');prod.c_ancho_tela=v('cat-c-ancho-tela')||3;}
+  else{prod.pi_mat=s('cat-pi-mat');prod.pi_caja=v('cat-pi-caja');prod.pi_precio=v('cat-pi-precio');prod.pi_inst=v('cat-pi-inst');}
+  if(editandoIdx>=0) catalogo[editandoIdx]=prod;
+  else catalogo.push(prod);
+  guardarCatalogo(); cerrarModal(); renderCatalogo();
+}
+function eliminarProducto(idx) {
+  if(!confirm('¿Eliminar este producto del catálogo?'))return;
+  catalogo.splice(idx,1); guardarCatalogo(); renderCatalogo();
+}
+
+// ── Exportar Excel ────────────────────────────────────────────────────────────
+function exportarExcel() {
+  if(!s('cliente')){alert('Escribe el nombre del cliente antes de exportar.');return;}
+  if(!items.length){alert('Agrega al menos un producto antes de exportar.');return;}
+  const wb=XLSX.utils.book_new();
+  const folio=g('folio-display').textContent;
+  const fechaStr=hoy.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const sub=r2(items.reduce((a,it)=>a+it.subtotal,0));
+  const iva=r2(sub*0.16),total=r2(sub+iva);
+
+  const wd=[];
+  wd.push(['COTIZACIÓN','','','','','','']);
+  wd.push(['','','','','','','']);
+  wd.push(['Folio:',folio,'','','Fecha:',fechaStr,'']);
+  wd.push(['Cliente:',s('cliente'),'','','Teléfono:',s('telefono'),'']);
+  wd.push(['Proyecto:',s('proyecto'),'','','Vigencia:',s('vigencia'),'']);
+  wd.push(['','','','','','','']);
+  wd.push(['#','Área / Ubicación','Producto','Detalle','Proveedor','Subtotal','']);
+  items.forEach((it,i)=>{
+    let prod='',det='',prov='';
+    if(it.type==='persiana'){prod=`${it.data.tipo} ${it.data.color}`.trim();det=`${it.data.ancho}m × ${it.data.alto}m = ${it.m2} m²  |  ${it.data.control}`;prov=it.data.proveedor;}
+    else if(it.type==='cortina'){prod=`${it.data.confeccion} — ${it.data.tela} ${it.data.color}`.trim();det=`${it.data.ancho}m × ${it.data.alto}m  |  ${it.data.numLienzos} lienzos  |  ${it.data.metrosTela} m de tela`;prov=it.data.proveedor;}
+    else{prod=`${it.data.material} ${it.data.color}`.trim();det=`${it.data.ancho}m × ${it.data.largo}m = ${it.data.m2} m²  |  ${it.data.cajas} cajas (IVA incl.)`;prov=it.data.proveedor;}
+    wd.push([i+1,it.area,prod,det,prov,it.subtotal,'']);
+  });
+  wd.push(['','','','','','','']);
+  wd.push(['','','','','Subtotal:',sub,'']);
+  wd.push(['','','','','IVA (16%):',iva,'']);
+  wd.push(['','','','','TOTAL:',total,'']);
+  if(s('notas')){wd.push(['','','','','','','']);wd.push(['Notas:',s('notas'),'','','','','']);}
+
+  const ws=XLSX.utils.aoa_to_sheet(wd);
+  ws['!cols']=[{wch:5},{wch:22},{wch:24},{wch:36},{wch:18},{wch:14},{wch:4}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:3,c:1},e:{r:3,c:3}},{s:{r:4,c:1},e:{r:4,c:3}}];
+  XLSX.utils.book_append_sheet(wb,ws,'Cotización');
+
+  const wd2=[];
+  wd2.push(['DESGLOSE TÉCNICO']);
+  wd2.push(['Folio:',folio,'Cliente:',s('cliente')]);
+  wd2.push([]);
+  items.forEach((it,i)=>{
+    wd2.push([`— ${it.label} ${i+1}: ${it.area} —`]);
+    if(it.type==='persiana'){const d=it.data;
+      wd2.push(['Tipo:',d.tipo,'Color:',d.color]);wd2.push(['Proveedor:',d.proveedor,'Control:',d.control]);
+      wd2.push(['Ancho:',`${d.ancho} m`,'Alto:',`${d.alto} m`]);wd2.push(['M²:',`${it.m2} m²`,'Precio/m²:',`$${d.precio}`]);
+      wd2.push(['Persiana:',`$${d.totalPersiana}`,'Instalación:',`$${d.inst}`]);wd2.push(['SUBTOTAL:',`$${it.subtotal}`]);
+    } else if(it.type==='cortina'){const d=it.data;
+      wd2.push(['Confección:',d.confeccion,'Tela:',`${d.tela} ${d.color}`]);wd2.push(['Proveedor:',d.proveedor,'Control:',d.control]);
+      wd2.push(['Ancho ventana:',`${d.ancho} m`,'Alto ventana:',`${d.alto} m`]);
+      wd2.push(['Aumento:',`${d.aum} m`,'Alto corte:',`${d.altoCorte} m`]);
+      wd2.push(['Ancho cortina (×2.5):',`${d.anchoCortina} m`,'Lienzos:',d.numLienzos]);
+      wd2.push(['Costo tela:',`$${d.costoTela}`,'Costo confección:',`$${d.costoConf}`]);
+      wd2.push(['Cortinero:',`$${d.costoCort}`,'Bastón:',`$${d.bast}`]);
+      wd2.push(['Instalación:',`$${d.inst}`]);wd2.push(['SUBTOTAL:',`$${it.subtotal}`]);
+    } else {const d=it.data;
+      wd2.push(['Material:',d.material,'Color:',d.color]);wd2.push(['Proveedor:',d.proveedor]);
+      wd2.push(['Ancho:',`${d.ancho} m`,'Largo:',`${d.largo} m`]);
+      wd2.push(['M² netos:',`${d.m2}`,'M² + excedente:',`${d.m2exc}`]);
+      wd2.push(['Cajas:',d.cajas,'Precio/caja:',`$${d.precio}`]);
+      wd2.push(['Material:',`$${d.totalMat}`,'Instalación:',`$${d.totalInst}`]);
+      wd2.push(['Subtotal s/IVA:',`$${d.subtotalSinIva}`,'IVA:',`$${d.iva}`]);wd2.push(['SUBTOTAL (IVA incl.):',`$${it.subtotal}`]);
+    }
+    wd2.push([]);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(wd2);
+  ws2['!cols']=[{wch:22},{wch:16},{wch:22},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Desglose técnico');
+
+  const nombre=`Cotizacion_${s('cliente').replace(/\s+/g,'_')}_${folio}.xlsx`;
+  XLSX.writeFile(wb,nombre);
+  folioNum++; localStorage.setItem('folioNum',folioNum); actualizarFolio();
+}
+</script>
+</body>
+</html>
